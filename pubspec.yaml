@@ -42,6 +42,10 @@ dependencies:
   webview_flutter: ^4.7.0
   flutter_inappwebview: ^6.0.0
   custom_refresh_indicator: ^3.1.0
+  anim_search_bar: ^2.0.3
+  switcher_button: ^0.0.4
+  outline_gradient_button: ^2.0.1+1
+  animated_rail: ^2.0.2
  
 dev_dependencies:
   flutter_test:

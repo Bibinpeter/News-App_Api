@@ -1,16 +1,18 @@
 import 'dart:convert';
 
+import 'package:anim_search_bar/anim_search_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart'as http;
+import 'package:http/http.dart' as http;
 import 'package:news/constant/cobnstant.dart';
 import 'package:news/data/data.dart';
 import 'package:news/main.dart';
-import 'package:news/toggledrawer.dart';
 import 'package:news/widget/article.dart';
 import 'package:news/widget/dropdownwidget.dart';
+import 'package:news/widget/headline.dart';
 import 'package:news/widget/wrapindicator.dart';
+import 'package:switcher_button/switcher_button.dart';
 
 class MyAppState extends State<MyApp> {
   dynamic cName;
@@ -30,6 +32,7 @@ class MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    TextEditingController textController = TextEditingController();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'NEWS',
@@ -46,7 +49,7 @@ class MyAppState extends State<MyApp> {
         key: scaffoldKey,
         drawer: Drawer(
           child: ListView(
-            padding: EdgeInsets.symmetric(vertical: 32),
+            padding: const EdgeInsets.symmetric(vertical: 32),
             children: <Widget>[
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,19 +66,8 @@ class MyAppState extends State<MyApp> {
                   const SizedBox(height: 20),
                 ],
               ),
-              ListTile(
-                title: TextFormField(
-                  decoration: InputDecoration(hintText: "find keyword"),
-                  scrollPadding: EdgeInsets.all(5),
-                  onChanged: (String val) => setState(() => findNews = val),
-                ),
-                trailing: IconButton(
-                  onPressed: () async => getNews(searchKey: findNews as String),
-                  icon: const Icon(Icons.search),
-                ),
-              ),
               ExpansionTile(
-                title: Text("COUNTRY"),
+                title: const Text("COUNTRY"),
                 children: <Widget>[
                   for (int i = 0; i < listOfCountry.length; i++)
                     DropDownList(
@@ -117,24 +109,39 @@ class MyAppState extends State<MyApp> {
         appBar: AppBar(
           backgroundColor: Colors.transparent.withOpacity(0.5),
           centerTitle: true,
-          title: const Text('News'),
+          title:  const headlinewidget(),
           actions: [
-            IconButton(
-              onPressed: () {
-                country = null;
-                category = null;
-                findNews = null;
-                cName = null;
-                getNews(reload: true);
+            AnimSearchBar(
+              color: Colors.blueGrey,
+              textFieldIconColor: Colors.amberAccent,
+              helpText: "find keyword",
+              width: 270,  
+              textController: textController,
+              onSuffixTap: () {
+                setState(() {
+                  textController.clear();
+                });
               },
-              icon: const Icon(Icons.refresh),
+              onSubmitted: (String val) async {
+                setState(() {
+                  findNews = val;
+                });
+                await getNews(searchKey: findNews);
+              },
             ),
-            Switch(
+            const SizedBox(width: 10,),
+            SwitcherButton(
+              offColor: const Color.fromARGB(221, 135, 134, 134),
+              size: 42,
               value: isSwitched,
-              onChanged: (bool value) => setState(() => isSwitched = value),
-              activeTrackColor: Colors.white,
-              activeColor: Colors.white,
+              onChange: (value) {
+                setState(() {
+                  isSwitched = value;
+                });
+               // print(value);
+              },
             ),
+             const SizedBox(width: 10,),
           ],
         ),
         body: WarpIndicator(
@@ -263,32 +270,32 @@ class MyAppState extends State<MyApp> {
     );
   }
 
- Future<void> getDataFromApi(String url)async{
-  final http.Response res=await http.get(Uri.parse(url));
-  if(res.statusCode==200){
-    if(jsonDecode(res.body)['totalResults']==0){
-      notFound=!isloading;
-      setState(()  =>false);
-    }else{
-      if(isloading){
-        final newData = jsonDecode(res.body)['articles']as List<dynamic>;
-        for(final e in newData){
-          news.add(e);
+  Future<void> getDataFromApi(String url) async {
+    final http.Response res = await http.get(Uri.parse(url));
+    if (res.statusCode == 200) {
+      if (jsonDecode(res.body)['totalResults'] == 0) {
+        notFound = !isloading;
+        setState(() => false);
+      } else {
+        if (isloading) {
+          final newData = jsonDecode(res.body)['articles'] as List<dynamic>;
+          for (final e in newData) {
+            news.add(e);
+          }
+        } else {
+          news = jsonDecode(res.body)['articles'] as List<dynamic>;
         }
-      }else{
-        news=jsonDecode(res.body)['articles'] as List<dynamic>;
+        setState(() {
+          notFound = false;
+          isloading = false;
+        });
       }
-      setState(() {
-        notFound=false;
-        isloading=false;
-      });
+    } else {
+      setState(() => notFound = true);
     }
-  }else{
-    setState(()=>notFound =  true);
   }
- }
 
- Future<void> getNews({
+  Future<void> getNews({
     String? channel,
     String? searchKey,
     bool reload = false,
@@ -296,7 +303,6 @@ class MyAppState extends State<MyApp> {
     setState(() => notFound = false);
 
     if (!reload && !isloading) {
-      toggleDrawer();
     } else {
       country = null;
       category = null;
@@ -341,9 +347,5 @@ class MyAppState extends State<MyApp> {
       getNews();
     }
   }
-
-
-
-
-
 }
+
