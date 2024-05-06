@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:news/constant/cobnstant.dart';
 import 'package:news/data/data.dart';
+import 'package:news/function/toggledrawer.dart';
 import 'package:news/main.dart';
 import 'package:news/widget/article.dart';
 import 'package:news/widget/dropdownwidget.dart';
@@ -48,74 +49,92 @@ class MyAppState extends State<MyApp> {
       home: Scaffold(
         key: scaffoldKey,
         drawer: Drawer(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 32),
-            children: <Widget>[
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (country != null)
-                    Text('Country = $cName')
-                  else
-                    Container(),
-                  const SizedBox(height: 10),
-                  if (category != null)
-                    Text('Category = $category')
-                  else
-                    Container(),
-                  const SizedBox(height: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black,
+                  Colors.blueGrey.shade700,
                 ],
               ),
-              ExpansionTile(
-                title: const Text("COUNTRY"),
-                children: <Widget>[
-                  for (int i = 0; i < listOfCountry.length; i++)
-                    DropDownList(
-                        name: listOfCountry[i]['name']!.toUpperCase(),
+            ),
+            child: ListView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              children: <Widget>[
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (country != null)
+                      Text('Country = $cName')
+                    else
+                      Container(),
+                    const SizedBox(height: 10),
+                    if (category != null)
+                      Text('Category = $category')
+                    else
+                      Container(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+                ExpansionTile(
+                  leading: const Icon(Icons.flag),
+                  title: const Text("COUNTRY"),
+                  children: <Widget>[
+                    for (int i = 0; i < listOfCountry.length; i++)
+                      DropDownList(
+                          name: listOfCountry[i]['name']!.toUpperCase(),
+                          call: () {
+                            country = listOfCountry[i]['code'];
+                            cName = listOfCountry[i]['name']!.toUpperCase();
+                            getNews();
+                            scaffoldKey.currentState!.openEndDrawer();
+                          })
+                  ],
+                ),
+                ExpansionTile(
+                  leading: const Icon(Icons.category),
+                  title: const Text('Category'),
+                  children: [
+                    for (int i = 0; i < listOfCategory.length; i++)
+                      DropDownList(
                         call: () {
-                          country = listOfCountry[i]['code'];
-                          cName = listOfCountry[i]['name']!.toUpperCase();
+                          category = listOfCategory[i]['code'];
                           getNews();
-                        })
-                ],
-              ),
-              ExpansionTile(
-                title: const Text('Category'),
-                children: [
-                  for (int i = 0; i < listOfCategory.length; i++)
-                    DropDownList(
-                      call: () {
-                        category = listOfCategory[i]['code'];
-                        getNews();
-                      },
-                      name: listOfCategory[i]['name']!.toUpperCase(),
-                    )
-                ],
-              ),
-              ExpansionTile(
-                title: const Text('Channel'),
-                children: [
-                  for (int i = 0; i < listOfNewsChannel.length; i++)
-                    DropDownList(
-                      call: () =>
-                          getNews(channel: listOfNewsChannel[i]['code']),
-                      name: listOfNewsChannel[i]['name']!.toUpperCase(),
-                    ),
-                ],
-              ),
-            ],
+                          scaffoldKey.currentState!.openEndDrawer();
+                        },
+                        name: listOfCategory[i]['name']!.toUpperCase(),
+                      )
+                  ],
+                ),
+                ExpansionTile(
+                  leading: const Icon(Icons.tv),
+                  title: const Text('Channel'),
+                  children: [
+                    for (int i = 0; i < listOfNewsChannel.length; i++)
+                      DropDownList(
+                        call: () =>
+                            getNews(channel: listOfNewsChannel[i]['code']),
+                        name: listOfNewsChannel[i]['name']!.toUpperCase(),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         appBar: AppBar(
           backgroundColor: Colors.transparent.withOpacity(0.5),
           centerTitle: true,
-          title:  const headlinewidget(),
+          title: const headlinewidget(),
           actions: [
             AnimSearchBar(
               color: Colors.blueGrey,
               textFieldIconColor: Colors.amberAccent,
               helpText: "find keyword",
-              width: 270,  
+              width: 270,
               textController: textController,
               onSuffixTap: () {
                 setState(() {
@@ -129,7 +148,9 @@ class MyAppState extends State<MyApp> {
                 await getNews(searchKey: findNews);
               },
             ),
-            const SizedBox(width: 10,),
+            const SizedBox(
+              width: 10,
+            ),
             SwitcherButton(
               offColor: const Color.fromARGB(221, 135, 134, 134),
               size: 42,
@@ -138,14 +159,18 @@ class MyAppState extends State<MyApp> {
                 setState(() {
                   isSwitched = value;
                 });
-               // print(value);
+                // print(value);
               },
             ),
-             const SizedBox(width: 10,),
+            const SizedBox(
+              width: 10,
+            ),
           ],
         ),
         body: WarpIndicator(
-          onRefresh: () => Future.delayed(const Duration(seconds: 2)),
+          onRefresh: () => Future.delayed(
+            const Duration(seconds: 2),
+          ),
           child: notFound
               ? const Center(
                   child: Text('Not Found', style: TextStyle(fontSize: 30)),
@@ -303,6 +328,7 @@ class MyAppState extends State<MyApp> {
     setState(() => notFound = false);
 
     if (!reload && !isloading) {
+      toggleDrawer();
     } else {
       country = null;
       category = null;
@@ -330,7 +356,7 @@ class MyAppState extends State<MyApp> {
       baseApi =
           'https://newsapi.org/v2/top-headlines?pageSize=10&page=$pageNum&q=$searchKey&apiKey=58b98b48d2c74d9c94dd5dc296ccf7b6';
     }
-    print(baseApi);
+    // print(baseApi);
     getDataFromApi(baseApi);
   }
 
@@ -348,4 +374,3 @@ class MyAppState extends State<MyApp> {
     }
   }
 }
-
